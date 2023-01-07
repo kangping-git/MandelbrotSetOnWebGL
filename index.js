@@ -6,7 +6,6 @@ window.addEventListener("load",() => {
     async function draw(gl){
         const VERTEX_SHADER = await (await fetch("./index.vert")).text()
         const FRAGMENT_SHADER = await (await fetch("./index.frag")).text()
-        // シェーダーをロード
         const vShader = gl.createShader(gl.VERTEX_SHADER)
         gl.shaderSource(vShader,VERTEX_SHADER)
         gl.compileShader(vShader)
@@ -47,10 +46,11 @@ window.addEventListener("load",() => {
         let clicking = false
         let zoom = 1
         let s = 1000/60 * 6
+        let _iter = 100
         function render(){
             gl.uniform1f(gl.getUniformLocation(program,"t"),(new Date() - time) / 1000)
             gl.uniform2f(gl.getUniformLocation(program,"r"),w,h)
-            gl.uniform1f(gl.getUniformLocation(program,"iter"),5000)
+            gl.uniform1f(gl.getUniformLocation(program,"_iter"),_iter)
             gl.uniform1f(gl.getUniformLocation(program,"zoom"),zoom)
             gl.uniform2f(gl.getUniformLocation(program,"position"),nowX, nowY)
             gl.clearColor (0.8, 0.8, 0.8, 1.0);
@@ -102,6 +102,18 @@ window.addEventListener("load",() => {
             canvas.width = w
             canvas.height = h
         })
+        window.addEventListener("keydown",(e) => {
+            if (e.key == "a"){
+                _iter += 1
+            }
+            if (e.key == "d"){
+                _iter -= 1
+            }
+            if (_iter <= 0){
+                _iter = 1
+            }
+            document.getElementById("Iteration").innerText = "Iteration:" + _iter
+        })
         render()
     }
     const canvas = document.getElementById("glcanvas")
@@ -110,5 +122,33 @@ window.addEventListener("load",() => {
     canvas.width = w
     canvas.height = h
     var gl = canvas.getContext("webgl")
+    let element = document.createElement("div")
+    element.id = "FPS"
+    document.body.appendChild(element)
+    document.getElementById("FPS").style.position = "fixed"
+    document.getElementById("FPS").style.top = "0px"
+    document.getElementById("FPS").style.left = "0px"
+    document.getElementById("FPS").style.backgroundColor = "rgba(0,0,0,0.7)"
+    document.getElementById("FPS").style.color = "greenyellow"
+    document.getElementById("FPS").style.fontSize = "15pt"
+    document.getElementById("FPS").style.zIndex = "9".repeat(999)
+    document.getElementById("FPS").style.userSelect = "none"
+    document.getElementById("FPS").style.textShadow = ""
+    document.getElementById("FPS").style.fontFamily = 'BlinkMacSystemFont,"Segoe UI","Roboto","Oxygen","Ubuntu","Cantarell","Fira Sans","Droid Sans","Helvetica Neue",sans-serif;'
+    document.getElementById("FPS").innerText = "FPS:60"
+    element = document.createElement("div")
+    element.id = "Iteration"
+    document.body.appendChild(element)
+    document.getElementById("Iteration").style.position = "fixed"
+    document.getElementById("Iteration").style.top = "25px"
+    document.getElementById("Iteration").style.left = "0px"
+    document.getElementById("Iteration").style.backgroundColor = "rgba(0,0,0,0.7)"
+    document.getElementById("Iteration").style.color = "greenyellow"
+    document.getElementById("Iteration").style.fontSize = "15pt"
+    document.getElementById("Iteration").style.zIndex = "9".repeat(999)
+    document.getElementById("Iteration").style.userSelect = "none"
+    document.getElementById("Iteration").style.textShadow = ""
+    document.getElementById("Iteration").style.fontFamily = 'BlinkMacSystemFont,"Segoe UI","Roboto","Oxygen","Ubuntu","Cantarell","Fira Sans","Droid Sans","Helvetica Neue",sans-serif;'
+    document.getElementById("Iteration").innerText = "Iteration:100"
     draw(gl)
 })

@@ -3,6 +3,7 @@ uniform float t;
 uniform float zoom;
 uniform vec2  r;
 uniform vec2  position;
+uniform float _iter;
 float PI = 3.14159265358979;
 vec3 hsvToRgb(float h, float s, float v) {
     h = mod(h,360.0);
@@ -42,12 +43,19 @@ void main(void){
         gl_FragColor = vec4(Color, 1.0);
         return;
     }
-    for (float i = 0.0;i < 1000.0*10.0;++i){
+    float iter = 100.0;
+    if (bool(_iter)){
+        iter = _iter;
+    }
+    for (float i = 0.0;i < 10000.0;++i){
         float temp = zr;
         zr = zr * zr - zi * zi + cr;
         zi = 2.0 * temp * zi + ci;
         if (zr * zr + zi * zi > 4.0){
             Color = ColorMap(i);
+            break;
+        }
+        if (i > iter){
             break;
         }
     }
