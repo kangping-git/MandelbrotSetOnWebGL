@@ -65,24 +65,29 @@ window.addEventListener("load",() => {
             ctx.drawImage(canvas, 0, 0);
             if (shiftKey){
                 ctx.fillStyle = "yellow"
-                ctx.strokeStyle = "yellow"
+                ctx.strokeStyle = "gray"
+                ctx.beginPath();
+                ctx.fill()
                 ctx.beginPath();
                 ctx.arc(_X,_Y,5,0,Math.PI * 2)
                 ctx.fill()
                 let zr = 0
                 let zi = 0
                 let cr = (_X-w/2.0)/zoom/(h/3.0)+nowX
-                let ci = (h/2.0-_Y)/zoom/(h/3.0)+nowY
+                let ci = (_Y-h/2.0)/zoom/(h/3.0)+nowY
+                ctx.beginPath();
+                ctx.arc((zr - nowX) * zoom * (h/3)+w/2.0,(zi-nowY) * zoom * (h/3)+h/2.0,5,0,Math.PI * 2)
+                ctx.fill()
                 for (let i = 0;i < _iter;++i){
                     ctx.beginPath();
-                    ctx.moveTo((zr - nowX) * zoom * (h/3)+w/2.0,(nowY-zi) * zoom * (h/3)+h/2.0)
+                    ctx.moveTo((zr - nowX) * zoom * (h/3)+w/2.0,(zi-nowY) * zoom * (h/3)+h/2.0)
                     let temp = zr
                     zr = zr ** 2 - zi ** 2 + cr
                     zi = 2 * temp * zi + ci
-                    ctx.lineTo((zr - nowX) * zoom * (h/3)+w/2.0,(nowY-zi) * zoom * (h/3)+h/2.0)
+                    ctx.lineTo((zr - nowX) * zoom * (h/3)+w/2.0,(zi-nowY) * zoom * (h/3)+h/2.0)
                     ctx.stroke()
                     ctx.beginPath();
-                    ctx.arc((zr - nowX) * zoom * (h/3)+w/2.0,(nowY-zi) * zoom * (h/3)+h/2.0,5,0,Math.PI * 2)
+                    ctx.arc((zr - nowX) * zoom * (h/3)+w/2.0,(zi-nowY) * zoom * (h/3)+h/2.0,5,0,Math.PI * 2)
                     ctx.fill()
                 }
             }
@@ -94,6 +99,21 @@ window.addEventListener("load",() => {
             }
             requestAnimationFrame(render)
             time -= s
+            if (a > 1){
+                a *= 1/1.01
+                zoom *= a
+                if (Math.abs(a-1) < 0.01){
+                    a = 1
+                }
+            }else if (Math.abs(a-1) > 0.001){
+                a *= 1.02
+                zoom *= a
+                if (Math.abs(a-1) < 0.01){
+                    a = 1
+                }
+            }else{
+                a = 1
+            }
         }
         window.addEventListener("contextmenu",(e) => {
             e.preventDefault()
@@ -108,7 +128,7 @@ window.addEventListener("load",() => {
                 s = 0
             }else if (e.button == 2){
                 nowX = (_X-w/2.0)/zoom/(h/3.0)+nowX
-                nowY = (h/2.0-_Y)/zoom/(h/3.0)+nowY
+                nowY = (_Y-h/2.0)/zoom/(h/3.0)+nowY
             }
             console.log(nowX,nowY);
         })
@@ -118,16 +138,22 @@ window.addEventListener("load",() => {
         window.addEventListener("mousemove",(e) => {
             if(clicking){
                 nowX = (clickX-e.clientX)/zoom/(h/3.0) + pointerX
-                nowY = (e.clientY-clickY)/zoom/(h/3.0) + pointerY
+                nowY = (clickY-e.clientY)/zoom/(h/3.0) + pointerY
             }
             _X = e.clientX
             _Y = e.clientY
         })
         window.addEventListener("wheel",(e) => {
             if(e.deltaY > 0){
-                zoom *= 0.9090909090909
+                a *= 1/1.05
+                if (a > 1/1.2){
+                    a = 1/1.2
+                }
             }else{
-                zoom *= 1.1
+                a *= 1.05
+                if (a > 1.2){
+                    a = 1.2
+                }
             }
             if (shiftKey){
                 e.preventDefault()
@@ -172,6 +198,7 @@ window.addEventListener("load",() => {
         })
         render()
     }
+    let a = 1
     const canvas = document.getElementById("glcanvas")
     const MainCanvas = document.getElementById("MainCanvas")
     let w = window.innerWidth

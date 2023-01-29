@@ -29,14 +29,14 @@ vec3 hsvToRgb(float h, float s, float v) {
     return rgb;
 }
 vec3 ColorMap(float iteration){
-    float i = (mod(iteration,50.0))/50.0;
+    float i = (mod(iteration,50.0));
     return hsvToRgb(230.0+i*167.0,1.0,sin(i*PI*2.0-PI/2.0)*0.5+0.5);
 }
 void main(void){
     float zr = 0.0;
     float zi = 0.0;
     float cr = (gl_FragCoord.x-r[0]/2.0)/zoom/(r[1]/3.0)+position[0];
-    float ci = (gl_FragCoord.y-r[1]/2.0)/zoom/(r[1]/3.0)+position[1];
+    float ci = (r[1]/2.0-gl_FragCoord.y)/zoom/(r[1]/3.0)+position[1];
     float q = (cr - 1.0/4.0) * (cr - 1.0/4.0) + ci * ci;
     vec3 Color = vec3(0.0);
     if (q * (q + (cr - 1.0/4.0)) < 1.0 / 4.0 * ci * ci){
@@ -52,7 +52,7 @@ void main(void){
         zr = zr * zr - zi * zi + cr;
         zi = 2.0 * temp * zi + ci;
         if (zr * zr + zi * zi > 4.0){
-            Color = ColorMap(i);
+            Color = ColorMap((i/iter-log(log(zr * zr + zi * zi)/log(2.0))));
             break;
         }
         if (i > iter){
