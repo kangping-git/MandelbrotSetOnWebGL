@@ -209,6 +209,11 @@ window.addEventListener("load",async () => {
         }
         const device = await adapter.requestDevice();
         const context = canvas.getContext('webgpu');
+        if (!context) {
+            console.error('Failed to get WebGPU context');
+            drawWebGL(canvas.getContext('webgl'));
+            return;
+        }
         const format = navigator.gpu.getPreferredCanvasFormat();
         context.configure({ device, format, alphaMode: 'opaque' });
 
