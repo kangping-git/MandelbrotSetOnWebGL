@@ -1,15 +1,15 @@
 // Vertex and fragment shader for WebGPU
 struct Uniforms {
-    t : f32;
-    zoom : f32;
-    r : vec2<f32>;
-    position : vec2<f32>;
-    iter : f32;
+    t : f32,
+    zoom : f32,
+    r : vec2<f32>,
+    position : vec2<f32>,
+    iter : f32,
 };
 @group(0) @binding(0) var<uniform> uniforms : Uniforms;
 
 struct VSOut {
-    @builtin(position) Position : vec4<f32>;
+    @builtin(position) Position : vec4<f32>,
 };
 
 @vertex
