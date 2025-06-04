@@ -93,7 +93,7 @@ window.addEventListener("load",() => {
             }
             frames += 1
             if (new Date() - lastFrameTime >= 1000){
-                console.log(frames);
+                document.getElementById("FPS").innerText = "FPS:" + frames
                 frames = 0
                 lastFrameTime = new Date()
             }
