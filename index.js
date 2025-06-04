@@ -1,9 +1,9 @@
-window.addEventListener("load",() => {
+window.addEventListener("load",async () => {
     /**
      * 
      * @param {WebGLRenderingContextBase} gl 
      */
-    async function draw(gl){
+    async function drawWebGL(gl){
         const VERTEX_SHADER = await (await fetch("./index.vert")).text()
         const FRAGMENT_SHADER = await (await fetch("./index.frag")).text()
         const vShader = gl.createShader(gl.VERTEX_SHADER)
@@ -157,8 +157,9 @@ window.addEventListener("load",() => {
             }
             if (shiftKey){
                 e.preventDefault()
-            }
-        })
+    }
+ })
+
         window.addEventListener("resize",() => {
             w = window.innerWidth
             h = window.innerHeight
@@ -198,6 +199,188 @@ window.addEventListener("load",() => {
         })
         render()
     }
+
+    async function drawWebGPU(canvas){
+        const adapter = await navigator.gpu.requestAdapter();
+        if (!adapter) {
+            console.error('Failed to get GPU adapter');
+            return;
+        }
+        const device = await adapter.requestDevice();
+        const context = canvas.getContext('webgpu');
+        if (!context) {
+            console.error('Failed to get WebGPU context');
+            drawWebGL(canvas.getContext('webgl'));
+            return;
+        }
+        const format = navigator.gpu.getPreferredCanvasFormat();
+        context.configure({ device, format, alphaMode: 'opaque' });
+
+        const shaderCode = await (await fetch('./index.wgsl')).text();
+        const shaderModule = device.createShaderModule({ code: shaderCode });
+        const pipeline = device.createRenderPipeline({
+            layout: 'auto',
+            vertex: {
+                module: shaderModule,
+                entryPoint: 'vs_main',
+                buffers: [{
+                    arrayStride: 8,
+                    attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x2' }]
+                }]
+            },
+            fragment: {
+                module: shaderModule,
+                entryPoint: 'fs_main',
+                targets: [{ format }]
+            },
+            primitive: { topology: 'triangle-list' }
+        });
+
+        const vertices = new Float32Array([
+            -1, 1, -1, -1, 1, -1, -1, 1, 1, -1, 1, 1
+        ]);
+        const vertexBuffer = device.createBuffer({
+            size: vertices.byteLength,
+            usage: GPUBufferUsage.VERTEX,
+            mappedAtCreation: true
+        });
+        new Float32Array(vertexBuffer.getMappedRange()).set(vertices);
+        vertexBuffer.unmap();
+
+        const uniformBufferSize = 4 * 8;
+        const uniformBuffer = device.createBuffer({
+            size: uniformBufferSize,
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+
+        const bindGroup = device.createBindGroup({
+            layout: pipeline.getBindGroupLayout(0),
+            entries: [{ binding: 0, resource: { buffer: uniformBuffer } }]
+        });
+
+        let frames = 0;
+        let lastFrameTime = new Date();
+        let time = new Date();
+        let pointerX = -1;
+        let pointerY = -1;
+        let clickX = 0;
+        let clickY = 0;
+        let nowX = 0;
+        let nowY = 0;
+        let clicking = false;
+        let zoom = 1;
+        let s = 1000 / 60 * 6;
+        let _iter = 100;
+
+        function render(){
+            const t = (new Date() - time) / 1000;
+            const uniformData = new Float32Array([t, zoom, w, h, nowX, nowY, _iter, 0]);
+            device.queue.writeBuffer(uniformBuffer, 0, uniformData);
+
+            const encoder = device.createCommandEncoder();
+            const view = context.getCurrentTexture().createView();
+            const pass = encoder.beginRenderPass({
+                colorAttachments: [{
+                    view,
+                    clearValue: { r: 0.8, g: 0.8, b: 0.8, a: 1 },
+                    loadOp: 'clear',
+                    storeOp: 'store'
+                }]
+            });
+            pass.setPipeline(pipeline);
+            pass.setVertexBuffer(0, vertexBuffer);
+            pass.setBindGroup(0, bindGroup);
+            pass.draw(6, 1, 0, 0);
+            pass.end();
+            device.queue.submit([encoder.finish()]);
+
+            ctx.clearRect(0, 0, MainCanvas.width, MainCanvas.height);
+            ctx.drawImage(canvas, 0, 0);
+
+            frames += 1;
+            if (new Date() - lastFrameTime >= 1000){
+                console.log(frames);
+                frames = 0;
+                lastFrameTime = new Date();
+            }
+            requestAnimationFrame(render);
+            time -= s;
+            if (a > 1){
+                a *= 1/1.01;
+                zoom *= a;
+                if (Math.abs(a-1) < 0.01){
+                    a = 1;
+                }
+            }else if (Math.abs(a-1) > 0.001){
+                a *= 1.02;
+                zoom *= a;
+                if (Math.abs(a-1) < 0.01){
+                    a = 1;
+                }
+            }else{
+                a = 1;
+            }
+        }
+
+        window.addEventListener('contextmenu', e => { e.preventDefault(); });
+        window.addEventListener('mousedown', e => {
+            if (e.button == 0){
+                clickX = e.clientX;
+                clickY = e.clientY;
+                pointerX = nowX;
+                pointerY = nowY;
+                clicking = true;
+                s = 0;
+            } else if (e.button == 2){
+                nowX = (_X-w/2.0)/zoom/(h/3.0)+nowX;
+                nowY = (_Y-h/2.0)/zoom/(h/3.0)+nowY;
+            }
+            console.log(nowX, nowY);
+        });
+        window.addEventListener('mouseup', () => { clicking = false; });
+        window.addEventListener('mousemove', e => {
+            if (clicking){
+                nowX = (clickX-e.clientX)/zoom/(h/3.0) + pointerX;
+                nowY = (clickY-e.clientY)/zoom/(h/3.0) + pointerY;
+            }
+            _X = e.clientX;
+            _Y = e.clientY;
+        });
+        window.addEventListener('wheel', e => {
+            if(e.deltaY > 0){
+                a *= 1/1.05;
+                if (a > 1/1.2){ a = 1/1.2; }
+            }else{
+                a *= 1.05;
+                if (a > 1.2){ a = 1.2; }
+            }
+            if (shiftKey){ e.preventDefault(); }
+        });
+        window.addEventListener('resize', () => {
+            w = window.innerWidth;
+            h = window.innerHeight;
+            canvas.width = w;
+            canvas.height = h;
+            MainCanvas.width = w;
+            MainCanvas.height = h;
+            context.configure({ device, format, alphaMode: 'opaque' });
+        });
+        let shiftKey = false;
+        let _X = 0;
+        let _Y = 0;
+        window.addEventListener('keydown', e => {
+            if (e.key == 'a'){ _iter += 1; }
+            if (e.key == 'd'){ _iter -= 1; }
+            if (e.key == 'A'){ _iter += 100; }
+            if (e.key == 'D'){ _iter -= 100; }
+            if (_iter <= 0){ _iter = 1; }
+            if (e.key == 'Control'){ shiftKey = true; }
+            document.getElementById('Iteration').innerText = 'Iteration:' + _iter;
+        });
+        window.addEventListener('keyup', e => { if (e.key == 'Control'){ shiftKey = false; } });
+        render();
+    }
+
     let a = 1
     const canvas = document.getElementById("glcanvas")
     const MainCanvas = document.getElementById("MainCanvas")
@@ -207,7 +390,6 @@ window.addEventListener("load",() => {
     canvas.height = h
     MainCanvas.width = w
     MainCanvas.height = h
-    var gl = canvas.getContext("webgl")
     var ctx = MainCanvas.getContext("2d")
     let element = document.createElement("div")
     element.id = "FPS"
@@ -237,5 +419,9 @@ window.addEventListener("load",() => {
     document.getElementById("Iteration").style.textShadow = ""
     document.getElementById("Iteration").style.fontFamily = 'BlinkMacSystemFont,"Segoe UI","Roboto","Oxygen","Ubuntu","Cantarell","Fira Sans","Droid Sans","Helvetica Neue",sans-serif;'
     document.getElementById("Iteration").innerText = "Iteration:100"
-    draw(gl)
+    if (navigator.gpu) {
+        drawWebGPU(canvas)
+    } else {
+        drawWebGL(canvas.getContext("webgl"))
+    }
 })
