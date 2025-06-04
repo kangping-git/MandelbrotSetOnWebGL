@@ -3,9 +3,9 @@ window.addEventListener("load",async () => {
      * 
      * @param {WebGLRenderingContextBase} gl 
      */
-    async function drawWebGL(gl){
+    async function drawWebGL(gl, useDD = false){
         const VERTEX_SHADER = await (await fetch("./index.vert")).text()
-        const FRAGMENT_SHADER = await (await fetch("./index.frag")).text()
+        const FRAGMENT_SHADER = await (await fetch(useDD ? "./index64.frag" : "./index.frag")).text()
         const vShader = gl.createShader(gl.VERTEX_SHADER)
         gl.shaderSource(vShader,VERTEX_SHADER)
         gl.compileShader(vShader)
@@ -53,7 +53,16 @@ window.addEventListener("load",async () => {
             gl.uniform2f(gl.getUniformLocation(program,"r"),w,h)
             gl.uniform1f(gl.getUniformLocation(program,"_iter"),_iter)
             gl.uniform1f(gl.getUniformLocation(program,"zoom"),zoom)
-            gl.uniform2f(gl.getUniformLocation(program,"position"),nowX, nowY)
+            if (useDD){
+                const hx = Math.fround(nowX);
+                const hxlo = nowX - hx;
+                const hy = Math.fround(nowY);
+                const hylo = nowY - hy;
+                gl.uniform2f(gl.getUniformLocation(program,"positionX"), hx, hxlo)
+                gl.uniform2f(gl.getUniformLocation(program,"positionY"), hy, hylo)
+            }else{
+                gl.uniform2f(gl.getUniformLocation(program,"position"),nowX, nowY)
+            }
             gl.clearColor (0.8, 0.8, 0.8, 1.0);
             gl.clear (gl.COLOR_BUFFER_BIT);
             gl.viewport(0, 0, w, h);
@@ -140,7 +149,7 @@ window.addEventListener("load",async () => {
         window.addEventListener("mousemove",(e) => {
             if(clicking){
                 nowX = (clickX-e.clientX)/zoom/(h/3.0) + pointerX
-                nowY = (clickY-e.clientY)/zoom/(h/3.0) + pointerY
+                nowY = (e.clientY-clickY)/zoom/(h/3.0) + pointerY
             }
             _X = e.clientX
             _Y = e.clientY
@@ -202,7 +211,7 @@ window.addEventListener("load",async () => {
         render()
     }
 
-    async function drawWebGPU(canvas){
+    async function drawWebGPU(canvas, useDD = false){
         const adapter = await navigator.gpu.requestAdapter();
         if (!adapter) {
             console.error('Failed to get GPU adapter');
@@ -218,7 +227,7 @@ window.addEventListener("load",async () => {
         const format = navigator.gpu.getPreferredCanvasFormat();
         context.configure({ device, format, alphaMode: 'opaque' });
 
-        const shaderCode = await (await fetch('./index.wgsl')).text();
+        const shaderCode = await (await fetch(useDD ? './index64.wgsl' : './index.wgsl')).text();
         const shaderModule = device.createShaderModule({ code: shaderCode });
         const pipeline = device.createRenderPipeline({
             layout: 'auto',
@@ -249,7 +258,7 @@ window.addEventListener("load",async () => {
         new Float32Array(vertexBuffer.getMappedRange()).set(vertices);
         vertexBuffer.unmap();
 
-        const uniformBufferSize = 4 * 8;
+        const uniformBufferSize = useDD ? 4 * 12 : 4 * 8;
         const uniformBuffer = device.createBuffer({
             size: uniformBufferSize,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -276,7 +285,16 @@ window.addEventListener("load",async () => {
 
         function render(){
             const t = (new Date() - time) / 1000;
-            const uniformData = new Float32Array([t, zoom, w, h, nowX, nowY, _iter, 0]);
+            let uniformData;
+            if (useDD){
+                const hx = Math.fround(nowX);
+                const hxlo = nowX - hx;
+                const hy = Math.fround(nowY);
+                const hylo = nowY - hy;
+                uniformData = new Float32Array([t, zoom, w, h, hx, hxlo, hy, hylo, _iter, 0, 0, 0]);
+            }else{
+                uniformData = new Float32Array([t, zoom, w, h, nowX, nowY, _iter, 0]);
+            }
             device.queue.writeBuffer(uniformBuffer, 0, uniformData);
 
             const encoder = device.createCommandEncoder();
@@ -343,7 +361,7 @@ window.addEventListener("load",async () => {
         window.addEventListener('mousemove', e => {
             if (clicking){
                 nowX = (clickX-e.clientX)/zoom/(h/3.0) + pointerX;
-                nowY = (clickY-e.clientY)/zoom/(h/3.0) + pointerY;
+                nowY = (e.clientY-clickY)/zoom/(h/3.0) + pointerY;
             }
             _X = e.clientX;
             _Y = e.clientY;
@@ -380,6 +398,139 @@ window.addEventListener("load",async () => {
             document.getElementById('Iteration').innerText = 'Iteration:' + _iter;
         });
         window.addEventListener('keyup', e => { if (e.key == 'Control'){ shiftKey = false; } });
+        render();
+    }
+
+    async function drawCPU(canvas){
+        const ctx2d = canvas.getContext("2d");
+        let frames = 0;
+        let lastFrameTime = new Date();
+        let time = new Date();
+        let pointerX = -1;
+        let pointerY = -1;
+        let clickX = 0;
+        let clickY = 0;
+        let nowX = 0;
+        let nowY = 0;
+        let clicking = false;
+        let zoom = 1;
+        const INITIAL_S = 1000/60 * 6;
+        let s = INITIAL_S;
+        let _iter = 100;
+
+        function hsvToRgb(h, s, v){
+            h = h % 360;
+            const c = s;
+            const h2 = h / 60.0;
+            const x = c * (1.0 - Math.abs((h2 % 2.0) - 1.0));
+            let rgb = [v - c, v - c, v - c];
+            if (0.0 <= h2 && h2 < 1.0){
+                rgb = [rgb[0] + c, rgb[1] + x, rgb[2]];
+            } else if (1.0 <= h2 && h2 < 2.0){
+                rgb = [rgb[0] + x, rgb[1] + c, rgb[2]];
+            } else if (2.0 <= h2 && h2 < 3.0){
+                rgb = [rgb[0], rgb[1] + c, rgb[2] + x];
+            } else if (3.0 <= h2 && h2 < 4.0){
+                rgb = [rgb[0], rgb[1] + x, rgb[2] + c];
+            } else if (4.0 <= h2 && h2 < 5.0){
+                rgb = [rgb[0] + x, rgb[1], rgb[2] + c];
+            } else if (5.0 <= h2 && h2 < 6.0){
+                rgb = [rgb[0] + c, rgb[1], rgb[2] + x];
+            }
+            return rgb.map(v => Math.round(Math.min(1, Math.max(0, v)) * 255));
+        }
+
+        function colorMap(i){
+            const ii = i % 50.0;
+            return hsvToRgb(230.0 + ii * 167.0, 1.0, Math.sin(ii * Math.PI * 2.0 - Math.PI / 2.0) * 0.5 + 0.5);
+        }
+
+        function drawFractal(){
+            const img = ctx2d.createImageData(w, h);
+            const data = img.data;
+            for(let py = 0; py < h; ++py){
+                for(let px = 0; px < w; ++px){
+                    let zr = 0.0;
+                    let zi = 0.0;
+                    const cr = (px - w/2.0)/zoom/(h/3.0) + nowX;
+                    const ci = (h/2.0 - py)/zoom/(h/3.0) + nowY;
+                    let i = 0;
+                    for(i = 0; i < _iter; ++i){
+                        const temp = zr;
+                        zr = zr * zr - zi * zi + cr;
+                        zi = 2.0 * temp * zi + ci;
+                        if (zr * zr + zi * zi > 4.0){
+                            break;
+                        }
+                    }
+                    let r = 0, g = 0, b = 0;
+                    if (i < _iter){
+                        [r, g, b] = colorMap(i);
+                    }
+                    const idx = (py * w + px) * 4;
+                    data[idx] = r;
+                    data[idx+1] = g;
+                    data[idx+2] = b;
+                    data[idx+3] = 255;
+                }
+            }
+            ctx2d.putImageData(img, 0, 0);
+        }
+
+        function render(){
+            drawFractal();
+            frames += 1;
+            if (new Date() - lastFrameTime >= 1000){
+                document.getElementById("FPS").innerText = "FPS:" + frames;
+                frames = 0;
+                lastFrameTime = new Date();
+            }
+            requestAnimationFrame(render);
+            time -= s;
+        }
+
+        window.addEventListener('contextmenu', e => { e.preventDefault(); });
+        window.addEventListener('mousedown', e => {
+            if (e.button == 0){
+                clickX = e.clientX;
+                clickY = e.clientY;
+                pointerX = nowX;
+                pointerY = nowY;
+                clicking = true;
+                s = 0;
+            } else if (e.button == 2){
+                nowX = (_X-w/2.0)/zoom/(h/3.0)+nowX;
+                nowY = (_Y-h/2.0)/zoom/(h/3.0)+nowY;
+            }
+        });
+        window.addEventListener('mouseup', () => { clicking = false; s = INITIAL_S; });
+        window.addEventListener('mousemove', e => {
+            if (clicking){
+                nowX = (clickX-e.clientX)/zoom/(h/3.0) + pointerX;
+                nowY = (e.clientY-clickY)/zoom/(h/3.0) + pointerY;
+            }
+            _X = e.clientX;
+            _Y = e.clientY;
+        });
+        window.addEventListener('wheel', e => {
+            if(e.deltaY > 0){
+                a *= 1/1.05;
+                if (a > 1/1.2){ a = 1/1.2; }
+            }else{
+                a *= 1.05;
+                if (a > 1.2){ a = 1.2; }
+            }
+        });
+        window.addEventListener('resize', () => {
+            w = window.innerWidth;
+            h = window.innerHeight;
+            canvas.width = w;
+            canvas.height = h;
+            MainCanvas.width = w;
+            MainCanvas.height = h;
+        });
+        let _X = 0;
+        let _Y = 0;
         render();
     }
 
@@ -421,9 +572,13 @@ window.addEventListener("load",async () => {
     document.getElementById("Iteration").style.textShadow = ""
     document.getElementById("Iteration").style.fontFamily = 'BlinkMacSystemFont,"Segoe UI","Roboto","Oxygen","Ubuntu","Cantarell","Fira Sans","Droid Sans","Helvetica Neue",sans-serif;'
     document.getElementById("Iteration").innerText = "Iteration:100"
-    if (navigator.gpu) {
-        drawWebGPU(canvas)
+    const useCPU = window.location.search.includes('cpu');
+    const useDD = window.location.search.includes('dd');
+    if (useCPU){
+        drawCPU(MainCanvas);
+    } else if (navigator.gpu){
+        drawWebGPU(canvas, useDD);
     } else {
-        drawWebGL(canvas.getContext("webgl"))
+        drawWebGL(canvas.getContext("webgl"), useDD);
     }
 })
