@@ -182,6 +182,11 @@ window.addEventListener("load",async () => {
             if (e.key == "A"){
                 _iter += 100
             }
+        if (!context) {
+            console.error('Failed to get WebGPU context');
+            drawWebGL(canvas.getContext('webgl'));
+            return;
+        }
             if (e.key == "D"){
                 _iter -= 100
             }
