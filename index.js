@@ -45,7 +45,8 @@ window.addEventListener("load",() => {
         let nowY = 0
         let clicking = false
         let zoom = 1
-        let s = 1000/60 * 6
+        const INITIAL_S = 1000/60 * 6
+        let s = INITIAL_S
         let _iter = 100
         function render(){
             gl.uniform1f(gl.getUniformLocation(program,"t"),(new Date() - time) / 1000)
@@ -134,6 +135,7 @@ window.addEventListener("load",() => {
         })
         window.addEventListener("mouseup",(e) => {
             clicking = false
+            s = INITIAL_S
         })
         window.addEventListener("mousemove",(e) => {
             if(clicking){
