@@ -1,3 +1,4 @@
+
 window.addEventListener("load",async () => {
     /**
      * 
@@ -45,7 +46,8 @@ window.addEventListener("load",async () => {
         let nowY = 0
         let clicking = false
         let zoom = 1
-        let s = 1000/60 * 6
+        const INITIAL_S = 1000/60 * 6
+        let s = INITIAL_S
         let _iter = 100
         function render(){
             gl.uniform1f(gl.getUniformLocation(program,"t"),(new Date() - time) / 1000)
@@ -63,7 +65,7 @@ window.addEventListener("load",async () => {
             gl.drawArrays(gl.TRIANGLES, 0, 6);
             ctx.clearRect(0,0, MainCanvas.width, MainCanvas.height);
             ctx.drawImage(canvas, 0, 0);
-            if (shiftKey){
+            if (ctrlKey){
                 ctx.fillStyle = "yellow"
                 ctx.strokeStyle = "gray"
                 ctx.beginPath();
@@ -93,7 +95,7 @@ window.addEventListener("load",async () => {
             }
             frames += 1
             if (new Date() - lastFrameTime >= 1000){
-                console.log(frames);
+                document.getElementById("FPS").innerText = "FPS:" + frames
                 frames = 0
                 lastFrameTime = new Date()
             }
@@ -134,6 +136,7 @@ window.addEventListener("load",async () => {
         })
         window.addEventListener("mouseup",(e) => {
             clicking = false
+            s = INITIAL_S
         })
         window.addEventListener("mousemove",(e) => {
             if(clicking){
@@ -155,7 +158,7 @@ window.addEventListener("load",async () => {
                     a = 1.2
                 }
             }
-            if (shiftKey){
+            if (ctrlKey){
                 e.preventDefault()
     }
  })
@@ -168,7 +171,7 @@ window.addEventListener("load",async () => {
             MainCanvas.width = w
             MainCanvas.height = h
         })
-        let shiftKey = false
+        let ctrlKey = false
         let _X = 0
         let _Y = 0
         window.addEventListener("keydown",(e) => {
@@ -188,13 +191,13 @@ window.addEventListener("load",async () => {
                 _iter = 1
             }
             if (e.key == "Control"){
-                shiftKey = true
+                ctrlKey = true
             }
             document.getElementById("Iteration").innerText = "Iteration:" + _iter
         })
         window.addEventListener("keyup",(e) => {
             if (e.key == "Control"){
-                shiftKey = false
+                ctrlKey = false
             }
         })
         render()
