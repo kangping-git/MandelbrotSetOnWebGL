@@ -1,3 +1,4 @@
+
 window.addEventListener("load",async () => {
     /**
      * 
@@ -159,8 +160,9 @@ window.addEventListener("load",async () => {
             }
             if (ctrlKey){
                 e.preventDefault()
-            }
-        })
+    }
+ })
+
         window.addEventListener("resize",() => {
             w = window.innerWidth
             h = window.innerHeight
@@ -391,7 +393,6 @@ window.addEventListener("load",async () => {
     canvas.height = h
     MainCanvas.width = w
     MainCanvas.height = h
-    var gl = canvas.getContext("webgl")
     var ctx = MainCanvas.getContext("2d")
     let element = document.createElement("div")
     element.id = "FPS"
@@ -424,6 +425,6 @@ window.addEventListener("load",async () => {
     if (navigator.gpu) {
         drawWebGPU(canvas)
     } else {
-        drawWebGL(gl)
+        drawWebGL(canvas.getContext("webgl"))
     }
 })
