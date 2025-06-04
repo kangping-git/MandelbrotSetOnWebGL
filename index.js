@@ -202,8 +202,8 @@ window.addEventListener("load",async () => {
                 const dy = e.touches[0].clientY - e.touches[1].clientY
                 const dist = Math.hypot(dx, dy)
                 const ratio = dist / touchStartDist
-                a = ratio
-                zoom = touchStartZoom * a
+                zoom = touchStartZoom * ratio
+                a = 1
                 e.preventDefault()
             }
         }, {passive: false})
@@ -253,6 +253,10 @@ window.addEventListener("load",async () => {
             if (e.key == "Control"){
                 ctrlKey = false
             }
+        })
+        document.getElementById("incIter").addEventListener("click", () => {
+            _iter += 1
+            document.getElementById("Iteration").innerText = "Iteration:" + _iter
         })
         render()
     }
@@ -454,8 +458,8 @@ window.addEventListener("load",async () => {
                 const dy = e.touches[0].clientY - e.touches[1].clientY;
                 const dist = Math.hypot(dx, dy);
                 const ratio = dist / touchStartDist;
-                a = ratio;
-                zoom = touchStartZoom * a;
+                zoom = touchStartZoom * ratio;
+                a = 1;
                 e.preventDefault();
             }
         }, {passive: false});
@@ -489,6 +493,10 @@ window.addEventListener("load",async () => {
             document.getElementById('Iteration').innerText = 'Iteration:' + _iter;
         });
         window.addEventListener('keyup', e => { if (e.key == 'Control'){ shiftKey = false; } });
+        document.getElementById('incIter').addEventListener('click', () => {
+            _iter += 1;
+            document.getElementById('Iteration').innerText = 'Iteration:' + _iter;
+        });
         render();
     }
 
@@ -644,8 +652,8 @@ window.addEventListener("load",async () => {
                 const dy = e.touches[0].clientY - e.touches[1].clientY;
                 const dist = Math.hypot(dx, dy);
                 const ratio = dist / touchStartDist;
-                a = ratio;
-                zoom = touchStartZoom * a;
+                zoom = touchStartZoom * ratio;
+                a = 1;
                 e.preventDefault();
             }
         }, {passive: false});
@@ -667,6 +675,10 @@ window.addEventListener("load",async () => {
         });
         let _X = 0;
         let _Y = 0;
+        document.getElementById('incIter').addEventListener('click', () => {
+            _iter += 1;
+            document.getElementById('Iteration').innerText = 'Iteration:' + _iter;
+        });
         render();
     }
 
