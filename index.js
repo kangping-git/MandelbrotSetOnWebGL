@@ -171,6 +171,52 @@ window.addEventListener("load",async () => {
     }
  })
 
+        let touchStartDist = 0
+        let touchStartZoom = 1
+        window.addEventListener("touchstart", (e) => {
+            if(e.touches.length === 1){
+                const t = e.touches[0]
+                clickX = t.clientX
+                clickY = t.clientY
+                pointerX = nowX
+                pointerY = nowY
+                clicking = true
+                s = 0
+            }else if (e.touches.length === 2){
+                const dx = e.touches[0].clientX - e.touches[1].clientX
+                const dy = e.touches[0].clientY - e.touches[1].clientY
+                touchStartDist = Math.hypot(dx, dy)
+                touchStartZoom = zoom
+            }
+        }, {passive: false})
+
+        window.addEventListener("touchmove", (e) => {
+            if(e.touches.length === 1 && clicking){
+                const t = e.touches[0]
+                nowX = (clickX - t.clientX)/zoom/(h/3.0) + pointerX
+                nowY = (t.clientY - clickY)/zoom/(h/3.0) + pointerY
+                _X = t.clientX
+                _Y = t.clientY
+            }else if(e.touches.length === 2){
+                const dx = e.touches[0].clientX - e.touches[1].clientX
+                const dy = e.touches[0].clientY - e.touches[1].clientY
+                const dist = Math.hypot(dx, dy)
+                const ratio = dist / touchStartDist
+                a = ratio
+                zoom = touchStartZoom * a
+                e.preventDefault()
+            }
+        }, {passive: false})
+
+        window.addEventListener("touchend", (e) => {
+            if(e.touches.length === 0){
+                clicking = false
+                s = INITIAL_S
+                a = 1
+            }
+        })
+
+
         window.addEventListener("resize",() => {
             w = window.innerWidth
             h = window.innerHeight
@@ -376,6 +422,51 @@ window.addEventListener("load",async () => {
             }
             if (shiftKey){ e.preventDefault(); }
         });
+
+        let touchStartDist = 0;
+        let touchStartZoom = 1;
+        window.addEventListener('touchstart', e => {
+            if(e.touches.length === 1){
+                const t = e.touches[0];
+                clickX = t.clientX;
+                clickY = t.clientY;
+                pointerX = nowX;
+                pointerY = nowY;
+                clicking = true;
+                s = 0;
+            }else if(e.touches.length === 2){
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                touchStartDist = Math.hypot(dx, dy);
+                touchStartZoom = zoom;
+            }
+        }, {passive: false});
+
+        window.addEventListener('touchmove', e => {
+            if(e.touches.length === 1 && clicking){
+                const t = e.touches[0];
+                nowX = (clickX - t.clientX)/zoom/(h/3.0) + pointerX;
+                nowY = (t.clientY - clickY)/zoom/(h/3.0) + pointerY;
+                _X = t.clientX;
+                _Y = t.clientY;
+            }else if(e.touches.length === 2){
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                const dist = Math.hypot(dx, dy);
+                const ratio = dist / touchStartDist;
+                a = ratio;
+                zoom = touchStartZoom * a;
+                e.preventDefault();
+            }
+        }, {passive: false});
+
+        window.addEventListener('touchend', e => {
+            if(e.touches.length === 0){
+                clicking = false;
+                s = 1000 / 60 * 6;
+                a = 1;
+            }
+        });
         window.addEventListener('resize', () => {
             w = window.innerWidth;
             h = window.innerHeight;
@@ -519,6 +610,51 @@ window.addEventListener("load",async () => {
             }else{
                 a *= 1.05;
                 if (a > 1.2){ a = 1.2; }
+            }
+        });
+
+        let touchStartDist = 0;
+        let touchStartZoom = 1;
+        window.addEventListener('touchstart', e => {
+            if(e.touches.length === 1){
+                const t = e.touches[0];
+                clickX = t.clientX;
+                clickY = t.clientY;
+                pointerX = nowX;
+                pointerY = nowY;
+                clicking = true;
+                s = 0;
+            }else if(e.touches.length === 2){
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                touchStartDist = Math.hypot(dx, dy);
+                touchStartZoom = zoom;
+            }
+        }, {passive: false});
+
+        window.addEventListener('touchmove', e => {
+            if(e.touches.length === 1 && clicking){
+                const t = e.touches[0];
+                nowX = (clickX - t.clientX)/zoom/(h/3.0) + pointerX;
+                nowY = (t.clientY - clickY)/zoom/(h/3.0) + pointerY;
+                _X = t.clientX;
+                _Y = t.clientY;
+            }else if(e.touches.length === 2){
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                const dist = Math.hypot(dx, dy);
+                const ratio = dist / touchStartDist;
+                a = ratio;
+                zoom = touchStartZoom * a;
+                e.preventDefault();
+            }
+        }, {passive: false});
+
+        window.addEventListener('touchend', e => {
+            if(e.touches.length === 0){
+                clicking = false;
+                s = INITIAL_S;
+                a = 1;
             }
         });
         window.addEventListener('resize', () => {
