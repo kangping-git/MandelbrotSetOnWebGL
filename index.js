@@ -64,7 +64,7 @@ window.addEventListener("load",() => {
             gl.drawArrays(gl.TRIANGLES, 0, 6);
             ctx.clearRect(0,0, MainCanvas.width, MainCanvas.height);
             ctx.drawImage(canvas, 0, 0);
-            if (shiftKey){
+            if (ctrlKey){
                 ctx.fillStyle = "yellow"
                 ctx.strokeStyle = "gray"
                 ctx.beginPath();
@@ -157,7 +157,7 @@ window.addEventListener("load",() => {
                     a = 1.2
                 }
             }
-            if (shiftKey){
+            if (ctrlKey){
                 e.preventDefault()
             }
         })
@@ -169,7 +169,7 @@ window.addEventListener("load",() => {
             MainCanvas.width = w
             MainCanvas.height = h
         })
-        let shiftKey = false
+        let ctrlKey = false
         let _X = 0
         let _Y = 0
         window.addEventListener("keydown",(e) => {
@@ -189,13 +189,13 @@ window.addEventListener("load",() => {
                 _iter = 1
             }
             if (e.key == "Control"){
-                shiftKey = true
+                ctrlKey = true
             }
             document.getElementById("Iteration").innerText = "Iteration:" + _iter
         })
         window.addEventListener("keyup",(e) => {
             if (e.key == "Control"){
-                shiftKey = false
+                ctrlKey = false
             }
         })
         render()
