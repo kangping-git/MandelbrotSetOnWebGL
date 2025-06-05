@@ -1,3 +1,15 @@
+function getFlags(searchString){
+    const search = searchString.toLowerCase();
+    return {
+        useCPU: search.includes('cpu'),
+        useDD: search.includes('dd')
+    };
+}
+if (typeof module !== 'undefined'){
+    module.exports.getFlags = getFlags;
+}
+
+if (typeof window !== 'undefined'){
 window.addEventListener("load",async () => {
     /**
      * 
@@ -720,8 +732,7 @@ window.addEventListener("load",async () => {
     document.getElementById("Iteration").style.textShadow = ""
     document.getElementById("Iteration").style.fontFamily = 'BlinkMacSystemFont,"Segoe UI","Roboto","Oxygen","Ubuntu","Cantarell","Fira Sans","Droid Sans","Helvetica Neue",sans-serif;'
     document.getElementById("Iteration").innerText = "Iteration:100"
-    const useCPU = window.location.search.includes('cpu');
-    const useDD = window.location.search.includes('dd');
+    const { useCPU, useDD } = getFlags(window.location.search);
     if (useCPU){
         drawCPU(MainCanvas);
     } else if (navigator.gpu){
@@ -730,3 +741,4 @@ window.addEventListener("load",async () => {
         drawWebGL(canvas.getContext("webgl"), useDD);
     }
 })
+}
