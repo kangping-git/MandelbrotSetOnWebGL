@@ -320,7 +320,7 @@ window.addEventListener("load",async () => {
         new Float32Array(vertexBuffer.getMappedRange()).set(vertices);
         vertexBuffer.unmap();
 
-        const uniformBufferSize = useDD ? 4 * 12 : 4 * 8;
+        const uniformBufferSize = useDD ? 4 * 16 : 4 * 8;
         const uniformBuffer = device.createBuffer({
             size: uniformBufferSize,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
